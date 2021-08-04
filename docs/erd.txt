@@ -1,0 +1,28 @@
+# https://app.quickdatabasediagrams.com/#/d/jmkkqv
+
+mime_type
+-
+id int PK
+media_type string
+
+content
+-
+id int PK
+mime_type_id int FK >- mime_type.id
+raw_data blob null
+
+
+file
+-
+content_id int FK >- content.id
+filename string
+
+sha256
+-
+hash blob PK
+content_id int FK >- content.id
+
+tag
+-
+content_id int FK >- content.id
+tag string
