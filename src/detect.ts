@@ -19,10 +19,12 @@ export function detectMimeType(
     }
     if (
       (raw_data.length >= HTMLDocPrefix.length &&
-        raw_data.slice(0, HTMLDocPrefix.length).toString().toUpperCase() ===
+        raw_data.slice(0, HTMLDocPrefix.length).toString()
+.toUpperCase() ===
           HTMLDocPrefix) ||
       (raw_data.length >= HTMLPrefix.length &&
-        raw_data.slice(0, HTMLPrefix.length).toString().toLowerCase() ===
+        raw_data.slice(0, HTMLPrefix.length).toString()
+.toLowerCase() ===
           HTMLPrefix)
     ) {
       return { ext: 'html', mime: 'text/html' }
