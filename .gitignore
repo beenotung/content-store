@@ -7,3 +7,5 @@ dist/
 .cache/
 *.tgz
 .env
+.nyc_output
+coverage/
