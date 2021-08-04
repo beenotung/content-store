@@ -33,6 +33,7 @@
     "report": "run-s report:update report:open"
   },
   "directories": {
+    "doc": "docs",
     "test": "test"
   },
   "files": [
