@@ -1,5 +1,5 @@
 {
-  "name": "content-store",
+  "name": "@beenotung/content-store",
   "version": "0.0.0",
   "description": "Content-based file system. Designed as embedded middleware.",
   "keywords": [
