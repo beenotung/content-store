@@ -8,6 +8,7 @@ create table if not exists mime_type (
 create table if not exists content (
   id integer primary key
 , mime_type_id integer not null references mime_type(id)
+, raw_data blob
 );
 
 create table if not exists file (
