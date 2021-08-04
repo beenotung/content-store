@@ -10,6 +10,7 @@ Inspired from IPFS but keep it simpler.
 Try to be compatible for zeronet.
 
 Use case in mind:
+
 - videos backup system (I do teaching with screen-cast)
 - photo album backend (for online service)
 
