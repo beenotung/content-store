@@ -1,8 +1,17 @@
 # content-store
 
-TODO: add desc
+Content-based file system. Designed as embedded middleware.
 
 [![npm Package Version](https://img.shields.io/npm/v/content-store.svg?maxAge=3600)](https://www.npmjs.com/package/content-store)
+
+## Background
+
+Inspired from IPFS but keep it simpler.
+Try to be compatible for zeronet.
+
+Use case in mind:
+- videos backup system (I do teaching with screen-cast)
+- photo album backend (for online service)
 
 ## License
 
