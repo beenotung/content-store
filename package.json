@@ -1,13 +1,14 @@
 {
   "name": "content-store",
-  "version": "1.0.0",
-  "description": "TODO: add desc",
-  "keywords": [],
-  "author": {
-    "name": "Beeno Tung",
-    "email": "aabbcc1241@yahoo.com.hk",
-    "url": "https://beeno-tung.surge.sh"
-  },
+  "version": "0.0.0",
+  "description": "Content-based file system. Designed as embedded middleware.",
+  "keywords": [
+    "datastore",
+    "content-addressable",
+    "filesystem",
+    "embedded"
+  ],
+  "author": "Beeno Tung <aabbcc1241@yahoo.com.hk> (https://beeno-tung.surge.sh)",
   "license": "BSD-2-Clause",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
