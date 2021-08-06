@@ -4,18 +4,16 @@ import isSvg from 'is-svg'
 const HTMLDocPrefix = '<!DOCTYPE HTML'
 const HTMLPrefix = '<html'
 
-export function detectMimeType(
-  raw_data: Buffer,
-): Promise<fileType.FileTypeResult> {
+export function detectMimeType(raw_data: Buffer): Promise<string> {
   return fileType.fromBuffer(raw_data).then(result => {
     if (result) {
       if (result.ext === 'xml' && isSvg(raw_data)) {
-        return { ext: 'svg', mime: 'image/svg+xml' }
+        return 'image/svg+xml'
       }
-      return result
+      return result.mime
     }
     if (isSvg(raw_data)) {
-      return { ext: 'svg', mime: 'image/svg+xml' }
+      return 'image/svg+xml'
     }
     if (
       (raw_data.length >= HTMLDocPrefix.length &&
@@ -27,11 +25,8 @@ export function detectMimeType(
 .toLowerCase() ===
           HTMLPrefix)
     ) {
-      return { ext: 'html', mime: 'text/html' }
+      return 'text/html'
     }
-    return {
-      ext: '' as any,
-      mime: 'application/octet-stream' as any,
-    }
+    return 'application/octet-stream'
   })
 }
