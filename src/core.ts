@@ -18,6 +18,16 @@ export type ImportFileOptions = {
   tags?: string[]
 }
 
+export type LoadContentResult = {
+  raw_data: Buffer
+  media_type: string
+}
+
+export type LoadFileResult = {
+  filename: string
+  media_type: string
+}
+
 export class ContentStore {
   private select_hash_id = this.db.prepare(`
 select content_id from sha256
@@ -32,6 +42,40 @@ where media_type = ?
 `,
     )
     .pluck()
+
+  private select_content = this.db.prepare(`
+select
+  content.raw_data
+, mime_type.media_type
+from content
+inner join mime_type on mime_type.id = content.mime_type_id
+where content.id = ?
+`)
+
+  private select_file = this.db.prepare(`
+select
+  file.filename
+, mime_type.media_type
+from content
+inner join file on file.content_id = content.id
+inner join mime_type on mime_type.id = content.mime_type_id
+where content.id = ?
+`)
+
+  private insert_file = this.db.prepare(`
+insert into file (filename, content_id)
+values (:filename, :content_id)
+`)
+
+  private insert_tag = this.db.prepare(`
+insert into tag (tag, content_id)
+values (:tag, :content_id)
+`)
+
+  private insert_content = this.db.prepare(`
+insert into content (raw_data, mime_type_id)
+values (:raw_data, :mime_type_id)
+`)
 
   constructor(public db: DBInstance) {}
 
@@ -70,14 +114,31 @@ where media_type = ?
           media_type,
           inline_raw_data: false,
         })
+        this.insert_file.run({ filename, content_id })
         if (tags) this.storeTags(content_id, tags)
         return content_id
       }),
     )
   }
 
+  loadContent(content_id: number): LoadContentResult {
+    const row = this.select_content.get(content_id)
+    if (!row) {
+      throw new Error('content not found')
+    }
+    return row
+  }
+
+  loadFile(content_id: number): LoadFileResult {
+    const row = this.select_file.get(content_id)
+    if (!row) {
+      throw new Error('file not found')
+    }
+    return row
+  }
+
   private storeTags(content_id: number, tags: string[]) {
-    tags.forEach(tag => this.db.insert('tag', { tag, content_id }))
+    tags.forEach(tag => this.insert_tag.run({ tag, content_id }))
   }
 
   private storeContentAndHash(args: {
@@ -91,10 +152,10 @@ where media_type = ?
     if (row) return row.content_id
 
     // store the content
-    const content_id = this.db.insert('content', {
+    const content_id = this.insert_content.run({
       raw_data: args.inline_raw_data ? args.raw_data : null,
       mime_type_id: this.getMimeTypeId(args.media_type),
-    })
+    }).lastInsertRowid as number
     this.db.insert('sha256', { hash: args.hash, content_id })
 
     return content_id
