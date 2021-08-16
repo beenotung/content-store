@@ -26,7 +26,7 @@ describe('file->store test suit', () => {
       raw_data,
       media_type: 'text/plain',
     })
-  })
+  }).timeout(5000)
 
   it('should get back data', () => {
     let { raw_data, media_type } = store.loadContent(content_id)
