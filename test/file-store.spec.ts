@@ -2,7 +2,7 @@ import { DBInstance } from 'better-sqlite3-schema'
 import { expect } from 'chai'
 import { ContentStore } from '../src/core'
 import { createDB } from '../src/db'
-import { existsSync, unlinkSync } from 'fs'
+import { existsSync, readFileSync, unlinkSync } from 'fs'
 import { join, dirname } from 'path'
 
 describe('file->store test suit', () => {
@@ -43,5 +43,21 @@ describe('file->store test suit', () => {
     let row = store.loadFile(content_id)
     expect(row.media_type).to.equals('image/png')
     expect(row.filename).to.equals(filename)
+  })
+
+  it('should load content in db or file', async () => {
+    let raw_data = Buffer.from('in-memory data')
+    let mem_content_id = await store.storeContent({ raw_data })
+
+    let filename = 'package.json'
+    let file_content_id = await store.importFile({ filename })
+
+    expect(store.loadContentOrFile(mem_content_id).raw_data).deep.equals(
+      raw_data,
+    )
+
+    expect(store.loadContentOrFile(file_content_id).raw_data).deep.equals(
+      readFileSync(filename),
+    )
   })
 })

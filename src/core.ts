@@ -34,14 +34,12 @@ select content_id from sha256
 where hash = ?
 `)
 
-  private select_mime_type_id = this.db
-    .prepare(
-      `
+  private select_mime_type_id = this.db.prepare(
+    `
 select id from mime_type
 where media_type = ?
 `,
-    )
-    .pluck()
+  )
 
   private select_content = this.db.prepare(`
 select
@@ -61,6 +59,17 @@ inner join file on file.content_id = content.id
 inner join mime_type on mime_type.id = content.mime_type_id
 where content.id = ?
 `)
+
+  private select_filename = this.db
+    .prepare(
+      `
+select
+  file.filename
+from file
+where file.content_id = ?
+`,
+    )
+    .pluck()
 
   private insert_file = this.db.prepare(`
 insert into file (filename, content_id)
@@ -137,6 +146,37 @@ values (:raw_data, :mime_type_id)
     return row
   }
 
+  loadContentOrFile(content_id: number): LoadContentResult {
+    const contentRow = this.select_content.get(content_id)
+    if (!contentRow) {
+      throw new ErrorWithRemark('content not found', 'not in content table')
+    }
+    if (contentRow.raw_data) {
+      return contentRow
+    }
+    const filename = this.select_filename.get(content_id)
+    if (!filename) {
+      throw new ErrorWithRemark('content not found', 'not in file table')
+    }
+    try {
+      const raw_data = readFileSync(filename)
+      return {
+        media_type: contentRow.media_type,
+        raw_data: raw_data,
+      }
+    } catch (error) {
+      throw new ErrorWithFilename('file not found', filename)
+    }
+  }
+
+  findContentByHash(hash: Buffer): number {
+    const row = this.select_hash_id.get(hash)
+    if (!row) {
+      throw new Error('content not found')
+    }
+    return row.content_id
+  }
+
   private storeTags(content_id: number, tags: string[]) {
     tags.forEach(tag => this.insert_tag.run({ tag, content_id }))
   }
@@ -165,6 +205,17 @@ values (:raw_data, :mime_type_id)
     const row = this.select_mime_type_id.get(mimeType)
     if (row) return row.id
     return this.db.insert('mime_type', { media_type: mimeType })
+  }
+}
+
+export class ErrorWithRemark extends Error {
+  constructor(message: string, public remark: string) {
+    super(message)
+  }
+}
+export class ErrorWithFilename extends Error {
+  constructor(message: string, public filename: string) {
+    super(message)
   }
 }
 
