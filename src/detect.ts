@@ -1,10 +1,14 @@
 import fileType from 'file-type'
 import isSvg from 'is-svg'
+import mimeType from 'mime-type/with-db'
 
 const HTMLDocPrefix = '<!DOCTYPE HTML'
 const HTMLPrefix = '<html'
 
-export function detectMimeType(raw_data: Buffer): Promise<string> {
+export function detectMimeType(
+  raw_data: Buffer,
+  filename: string | undefined,
+): Promise<string> {
   return fileType.fromBuffer(raw_data).then(result => {
     if (result) {
       if (result.ext === 'xml' && isSvg(raw_data)) {
@@ -26,6 +30,17 @@ export function detectMimeType(raw_data: Buffer): Promise<string> {
           HTMLPrefix)
     ) {
       return 'text/html'
+    }
+    if (filename) {
+      const parts = filename.split('.')
+      const extname = parts[parts.length - 1]
+      const mimeResult = mimeType.lookup(extname)
+      if (typeof mimeResult === 'string') {
+        return mimeResult
+      }
+      if (Array.isArray(mimeResult) && mimeResult.length > 0) {
+        return mimeResult[0]
+      }
     }
     return 'application/octet-stream'
   })

@@ -94,9 +94,11 @@ values (:raw_data, :mime_type_id)
     tags,
   }: StoreContentOptions): StoreResult {
     const hash = hashContent(raw_data)
+    const filename = undefined
     return useMediaType(
       media_type,
       raw_data,
+      filename,
       this.db.transaction(media_type => {
         const content_id = this.storeContentAndHash({
           raw_data,
@@ -116,6 +118,7 @@ values (:raw_data, :mime_type_id)
     return useMediaType(
       media_type,
       raw_data,
+      filename,
       this.db.transaction(media_type => {
         const content_id = this.storeContentAndHash({
           raw_data,
@@ -222,12 +225,13 @@ export class ErrorWithFilename extends Error {
 function useMediaType<T>(
   media_type: string | undefined,
   raw_data: Buffer,
+  filename: string | undefined,
   fn: (media_type: string) => T,
 ): T | Promise<T> {
   if (media_type) {
     return fn(media_type)
   }
-  return detectMimeType(raw_data).then(fn)
+  return detectMimeType(raw_data, filename).then(fn)
 }
 
 function hashContent(raw_data: Buffer): Buffer {

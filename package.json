@@ -51,6 +51,8 @@
     "better-sqlite3-schema": "^1.1.0",
     "file-type": "^16.5.2",
     "is-svg": "^4.3.1",
+    "mime-db": "^1.49.0",
+    "mime-type": "^4.0.0",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
