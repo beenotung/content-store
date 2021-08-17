@@ -5,6 +5,8 @@ import mimeType from 'mime-type/with-db'
 const HTMLDocPrefix = '<!DOCTYPE HTML'
 const HTMLPrefix = '<html'
 
+mimeType.types['ts'] = 'text/typescript'
+
 export function detectMimeType(
   raw_data: Buffer,
   filename: string | undefined,
@@ -32,9 +34,7 @@ export function detectMimeType(
       return 'text/html'
     }
     if (filename) {
-      const parts = filename.split('.')
-      const extname = parts[parts.length - 1]
-      const mimeResult = mimeType.lookup(extname)
+      const mimeResult = mimeType.lookup(filename)
       if (typeof mimeResult === 'string') {
         return mimeResult
       }
