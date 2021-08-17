@@ -48,12 +48,14 @@ export class ContentStore {
   private select_hash_id = this.db.prepare(`
 select content_id from sha256
 where hash = ?
+limit 1
 `)
 
   private select_mime_type_id = this.db.prepare(
     `
 select id from mime_type
 where media_type = ?
+limit 1
 `,
   )
 
@@ -64,6 +66,7 @@ select
 from content
 inner join mime_type on mime_type.id = content.mime_type_id
 where content.id = ?
+limit 1
 `)
 
   private select_file = this.db.prepare(`
@@ -74,6 +77,7 @@ from content
 inner join file on file.content_id = content.id
 inner join mime_type on mime_type.id = content.mime_type_id
 where content.id = ?
+limit 1
 `)
 
   private select_filename = this.db
@@ -83,6 +87,7 @@ select
   file.filename
 from file
 where file.content_id = ?
+limit 1
 `,
     )
     .pluck()
@@ -157,11 +162,10 @@ limit 1
           dirStack.push(fullPath)
           return
         }
-        if (stat.isFile()) {
-          if (filterFile && !filterFile(fullPath, filename, dir)) return
-          if (extname && !filename.endsWith(extname)) return
-          this.importFile({ filename: fullPath, tags })
-        }
+        if (!stat.isFile()) return
+        if (filterFile && !filterFile(fullPath, filename, dir)) return
+        if (extname && !filename.endsWith(extname)) return
+        this.importFile({ filename: fullPath, tags })
       })
     }
   }
