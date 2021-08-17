@@ -42,6 +42,7 @@
     "test": "test"
   },
   "files": [
+    "migrations",
     "dist"
   ],
   "dependencies": {
