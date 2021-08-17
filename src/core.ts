@@ -1,6 +1,6 @@
 import { detectMimeType } from './detect'
 import { createHash } from 'crypto'
-import { statSync, readdirSync, readFileSync } from 'fs'
+import { unlinkSync, statSync, readdirSync, readFileSync } from 'fs'
 import { DBInstance } from 'better-sqlite3-schema'
 import { join } from 'path'
 
@@ -26,6 +26,12 @@ export type ImportDirectoryOptions = {
   extname?: string // default is any
   filterFile?: (fullPath: string, filename: string, dir: string) => boolean // default is true for all files
   filterDirectory?: (fullPath: string, filename: string, dir: string) => boolean // default is true for all directories
+}
+
+export type RemoveExistingContentOptions = {
+  dir: string
+  recursive?: boolean // default false
+  verbose?: boolean // default false
 }
 
 export type LoadContentResult = {
@@ -94,6 +100,12 @@ values (:tag, :content_id)
   private insert_content = this.db.prepare(`
 insert into content (raw_data, mime_type_id)
 values (:raw_data, :mime_type_id)
+`)
+
+  private select_by_filename = this.db.prepare(`
+select content_id from file
+where filename = ?
+limit 1
 `)
 
   constructor(public db: DBInstance) {}
@@ -173,6 +185,33 @@ values (:raw_data, :mime_type_id)
         return content_id
       }),
     )
+  }
+
+  /** remove files on directory that is already stored in ContentStore */
+  removeExistingContent({
+    dir,
+    recursive,
+    verbose,
+  }: RemoveExistingContentOptions) {
+    const dirStack: string[] = [dir]
+    for (;;) {
+      const dir = dirStack.pop()
+      if (!dir) break
+      const files = readdirSync(dir)
+      files.forEach(filename => {
+        const fullPath = join(dir, filename)
+        const stat = statSync(fullPath)
+        if (stat.isDirectory() && recursive) {
+          dirStack.push(fullPath)
+          return
+        }
+        if (!stat.isFile()) return
+        const row = this.select_by_filename.get(fullPath)
+        if (!row) return
+        if (verbose) console.debug('rm', fullPath)
+        unlinkSync(fullPath)
+      })
+    }
   }
 
   loadContent(content_id: number): LoadContentResult {
