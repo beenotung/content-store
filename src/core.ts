@@ -17,6 +17,9 @@ export type ImportFileOptions = {
   filename: string
   media_type?: string
   tags?: string[]
+  inline_raw_data?: boolean // default false
+  auto_delete?: boolean // default false, only use when inline_raw_data is true
+  verbose?: boolean // default false, only used when auto_delete is true
 }
 
 export type ImportDirectoryOptions = {
@@ -26,6 +29,9 @@ export type ImportDirectoryOptions = {
   extname?: string // default is any
   filterFile?: (fullPath: string, filename: string, dir: string) => boolean // default is true for all files
   filterDirectory?: (fullPath: string, filename: string, dir: string) => boolean // default is true for all directories
+  inline_raw_data?: boolean // default false
+  auto_delete?: boolean // default false, only use when inline_raw_data is true
+  verbose?: boolean // default false, only used when auto_delete is true
 }
 
 export type RemoveExistingContentOptions = {
@@ -45,7 +51,7 @@ export type LoadFileResult = {
 }
 
 export class ContentStore {
-  private select_hash_id = this.db.prepare(`
+  private select_content_by_hash = this.db.prepare(`
 select content_id from sha256
 where hash = ?
 limit 1
@@ -157,6 +163,9 @@ limit 1
     filterFile,
     filterDirectory,
     tags,
+    inline_raw_data,
+    auto_delete,
+    verbose,
   }: ImportDirectoryOptions) {
     const dirStack: string[] = [dir]
     for (;;) {
@@ -176,15 +185,28 @@ limit 1
         if (!stat.isFile()) return
         if (filterFile && !filterFile(fullPath, filename, dir)) return
         if (extname && !filename.endsWith(extname)) return
-        this.importFile({ filename: fullPath, tags })
+        this.importFile({
+          filename: fullPath,
+          tags,
+          inline_raw_data,
+          auto_delete,
+          verbose,
+        })
       })
     }
   }
 
-  importFile({ filename, media_type, tags }: ImportFileOptions): StoreResult {
+  importFile({
+    filename,
+    media_type,
+    tags,
+    inline_raw_data,
+    auto_delete,
+    verbose,
+  }: ImportFileOptions): StoreResult {
     const raw_data = readFileSync(filename)
     const hash = hashContent(raw_data)
-    return useMediaType(
+    const result = useMediaType(
       media_type,
       raw_data,
       filename,
@@ -193,16 +215,23 @@ limit 1
           raw_data,
           hash,
           media_type,
-          inline_raw_data: false,
+          inline_raw_data: inline_raw_data || false,
         })
-        this.insert_file.run({ filename, content_id })
+        if (!inline_raw_data) {
+          this.insert_file.run({ filename, content_id })
+        }
         if (tags) this.storeTags(content_id, tags)
         return content_id
       }),
     )
+    if (inline_raw_data && auto_delete) {
+      if (verbose) console.debug('rm', filename)
+      unlinkSync(filename)
+    }
+    return result
   }
 
-  /** remove files on directory that is already stored in ContentStore */
+  /** remove files on directory that is already stored inline in ContentStore */
   removeExistingContent({
     dir,
     recursive,
@@ -221,7 +250,9 @@ limit 1
           return
         }
         if (!stat.isFile()) return
-        const row = this.select_by_filename.get(fullPath)
+        const raw_data = readFileSync(fullPath)
+        const hash = hashContent(raw_data)
+        const row = this.select_content_by_hash.get(hash)
         if (!row) return
         if (verbose) console.debug('rm', fullPath)
         unlinkSync(fullPath)
@@ -269,7 +300,7 @@ limit 1
   }
 
   findContentByHash(hash: Buffer): number {
-    const row = this.select_hash_id.get(hash)
+    const row = this.select_content_by_hash.get(hash)
     if (!row) {
       throw new Error('content not found')
     }
@@ -302,7 +333,7 @@ limit 1
     inline_raw_data: boolean
   }): number {
     // check if this content already exists
-    const row = this.select_hash_id.get(args.hash)
+    const row = this.select_content_by_hash.get(args.hash)
     if (row) return row.content_id
 
     // store the content
