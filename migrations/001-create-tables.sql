@@ -8,6 +8,7 @@ create table if not exists mime_type (
 create table if not exists content (
   id integer primary key
 , mime_type_id integer not null references mime_type(id)
+, byte_size integer not null
 , raw_data blob
 );
 
@@ -22,8 +23,14 @@ create table if not exists sha256 (
 );
 
 create table if not exists tag (
-  tag text
+  id integer primary key
+, tag text unique
+);
+
+create table if not exists content_tag (
+  tag_id integer not null references tag(id)
 , content_id integer not null references content(id)
+, unique(tag_id, content_id)
 );
 
 -- Down

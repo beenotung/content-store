@@ -98,13 +98,24 @@ values (:filename, :content_id)
 `)
 
   private insert_tag = this.db.prepare(`
-insert into tag (tag, content_id)
-values (:tag, :content_id)
+insert into tag (tag)
+values (?)
+`)
+
+  private select_tag_id = this.db.prepare(`
+select id from tag
+where tag = ?
+limit 1
+`)
+
+  private insert_content_tag = this.db.prepare(`
+insert or ignore into content_tag (tag_id, content_id)
+values (:tag_id, :content_id)
 `)
 
   private insert_content = this.db.prepare(`
-insert into content (raw_data, mime_type_id)
-values (:raw_data, :mime_type_id)
+insert into content (raw_data, mime_type_id, byte_size)
+values (:raw_data, :mime_type_id, :byte_size)
 `)
 
   private select_by_filename = this.db.prepare(`
@@ -265,8 +276,23 @@ limit 1
     return row.content_id
   }
 
+  // tag -> id
+  private tag_cache: Record<string, number> = {}
+
+  clearCache() {
+    this.tag_cache = {}
+  }
+
   private storeTags(content_id: number, tags: string[]) {
-    tags.forEach(tag => this.insert_tag.run({ tag, content_id }))
+    tags.forEach(tag => {
+      let tag_id = this.tag_cache[tag]
+      if (typeof tag_id !== 'number') {
+        const tag_row = this.select_tag_id.get(tag)
+        tag_id = tag_row ? tag_row.id : this.insert_tag.run(tag).lastInsertRowid
+        this.tag_cache[tag] = tag_id
+      }
+      this.insert_content_tag.run({ tag_id, content_id })
+    })
   }
 
   private storeContentAndHash(args: {
@@ -283,6 +309,7 @@ limit 1
     const content_id = this.insert_content.run({
       raw_data: args.inline_raw_data ? args.raw_data : null,
       mime_type_id: this.getMimeTypeId(args.media_type),
+      byte_size: args.raw_data.byteLength,
     }).lastInsertRowid as number
     this.db.insert('sha256', { hash: args.hash, content_id })
 
