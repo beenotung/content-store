@@ -1,7 +1,8 @@
 import { detectMimeType } from './detect'
 import { createHash } from 'crypto'
-import { readFileSync } from 'fs'
+import { statSync, readdirSync, readFileSync } from 'fs'
 import { DBInstance } from 'better-sqlite3-schema'
+import { join } from 'path'
 
 export type StoreResult = number | Promise<number>
 
@@ -16,6 +17,15 @@ export type ImportFileOptions = {
   filename: string
   media_type?: string
   tags?: string[]
+}
+
+export type ImportDirectoryOptions = {
+  dir: string
+  tags?: string[]
+  recursive?: boolean // default false
+  extname?: string // default is any
+  filterFile?: (fullPath: string, filename: string, dir: string) => boolean // default is true for all files
+  filterDirectory?: (fullPath: string, filename: string, dir: string) => boolean // default is true for all directories
 }
 
 export type LoadContentResult = {
@@ -110,6 +120,38 @@ values (:raw_data, :mime_type_id)
         return content_id
       }),
     )
+  }
+
+  importDirectory({
+    dir,
+    recursive,
+    extname,
+    filterFile,
+    filterDirectory,
+    tags,
+  }: ImportDirectoryOptions) {
+    const dirStack: string[] = [dir]
+    for (;;) {
+      const dir = dirStack.pop()
+      if (!dir) break
+      const files = readdirSync(dir)
+      files.forEach(filename => {
+        const fullPath = join(dir, filename)
+        const stat = statSync(fullPath)
+        if (stat.isDirectory() && recursive) {
+          if (filterDirectory && !filterDirectory(fullPath, filename, dir)) {
+            return
+          }
+          dirStack.push(fullPath)
+          return
+        }
+        if (stat.isFile()) {
+          if (filterFile && !filterFile(fullPath, filename, dir)) return
+          if (extname && !filename.endsWith(extname)) return
+          this.importFile({ filename: fullPath, tags })
+        }
+      })
+    }
   }
 
   importFile({ filename, media_type, tags }: ImportFileOptions): StoreResult {
