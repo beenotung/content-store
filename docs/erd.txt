@@ -3,19 +3,20 @@
 mime_type
 -
 id int PK
-media_type string
+media_type text
 
 content
 -
 id int PK
 mime_type_id int FK >- mime_type.id
+byte_size int
 raw_data blob null
 
 
 file
 -
 content_id int FK >- content.id
-filename string
+filename text
 
 sha256
 -
@@ -24,5 +25,10 @@ content_id int FK >- content.id
 
 tag
 -
+id int PK
+tag text
+
+content_tag
+-
+tag_id int FK >- tag.id
 content_id int FK >- content.id
-tag string
