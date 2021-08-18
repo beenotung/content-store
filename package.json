@@ -1,6 +1,6 @@
 {
   "name": "@beenotung/content-store",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Content-based file system. Designed as embedded middleware.",
   "keywords": [
     "datastore",
