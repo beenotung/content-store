@@ -43,6 +43,7 @@
   },
   "files": [
     "migrations",
+    "docs",
     "dist"
   ],
   "dependencies": {
