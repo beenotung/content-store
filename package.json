@@ -1,6 +1,6 @@
 {
-  "name": "@beenotung/content-store",
-  "version": "0.0.0",
+  "name": "content-store.ts",
+  "version": "0.1.1",
   "description": "Content-based file system. Designed as embedded middleware.",
   "keywords": [
     "datastore",
@@ -42,6 +42,7 @@
     "test": "test"
   },
   "files": [
+    "src",
     "migrations",
     "docs",
     "dist"

@@ -2,17 +2,17 @@
 
 Content-based file system. Designed as embedded middleware.
 
-[![npm Package Version](https://img.shields.io/npm/v/@beenotung/content-store.svg?maxAge=3600)](https://www.npmjs.com/package/@beenotung/content-store)
+[![npm Package Version](https://img.shields.io/npm/v/content-store.ts.svg?maxAge=3600)](https://www.npmjs.com/package/content-store.ts)
 
 ## Background
 
 Inspired from IPFS but keep it simpler.
-Try to be compatible for zeronet.
 
 Use case in mind:
 
 - videos backup system (I do teaching with screen-cast)
 - photo album backend (for online service)
+- storage backend for zeronet
 
 ## License
 
