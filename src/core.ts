@@ -377,7 +377,7 @@ function useMediaType<T>(
   return detectMimeType(raw_data, filename).then(fn)
 }
 
-function hashContent(raw_data: Buffer): Buffer {
+export function hashContent(raw_data: Buffer): Buffer {
   const hash = createHash('sha256')
   hash.write(raw_data)
   return hash.digest()

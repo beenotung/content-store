@@ -1,6 +1,6 @@
 import { DBInstance } from 'better-sqlite3-schema'
 import { expect } from 'chai'
-import { ContentStore } from '../src/core'
+import { ContentStore, hashContent } from '../src/core'
 import { createDB } from '../src/db'
 import { existsSync, readFileSync, unlinkSync } from 'fs'
 import { join, dirname } from 'path'
@@ -59,5 +59,15 @@ describe('file->store test suit', () => {
     expect(store.loadContentOrFile(file_content_id).raw_data).deep.equals(
       readFileSync(filename),
     )
+  })
+
+  it('should look up content by hash', async () => {
+    let raw_data = Buffer.from('raw data for hash lookup test')
+    let hash = hashContent(raw_data)
+    expect(hash).not.undefined
+    let result = await store.storeContent({ raw_data })
+    expect(result).not.undefined
+    let id = store.findContentByHash(hash)
+    expect(id).to.equals(result)
   })
 })
