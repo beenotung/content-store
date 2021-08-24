@@ -1,5 +1,4 @@
-import DB from 'better-sqlite3-helper'
-import { DBInstance, toSafeMode } from 'better-sqlite3-schema'
+import { DBInstance, toSafeMode, newDB } from 'better-sqlite3-schema'
 import { join } from 'path'
 
 export function createDB(path = join('data', 'sqlite3.db')): DBInstance {
@@ -7,7 +6,7 @@ export function createDB(path = join('data', 'sqlite3.db')): DBInstance {
     ? join(__dirname, '..') // src
     : join(__dirname, '..', '..') // dist/cjs
   const migrationsPath = join(basedir, 'migrations')
-  const db = DB({
+  const db = newDB({
     path,
     migrate: {
       migrationsPath,
