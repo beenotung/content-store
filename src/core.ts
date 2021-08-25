@@ -130,6 +130,16 @@ where filename = ?
 limit 1
 `)
 
+  private insert_sha256 = this.db.prepare(`
+insert into sha256 (hash, content_id)
+values (:hash, :content_id)
+`)
+
+  private insert_mime_type = this.db.prepare(`
+insert into mime_type (media_type)
+values (?)
+`)
+
   constructor(public db: DBInstance) {}
 
   storeContent({
@@ -342,7 +352,7 @@ limit 1
       mime_type_id: this.getMimeTypeId(args.media_type),
       byte_size: args.raw_data.byteLength,
     }).lastInsertRowid as number
-    this.db.insert('sha256', { hash: args.hash, content_id })
+    this.insert_sha256.run({ hash: args.hash, content_id })
 
     return content_id
   }
@@ -350,7 +360,7 @@ limit 1
   private getMimeTypeId(mimeType: string): number {
     const row = this.select_mime_type_id.get(mimeType)
     if (row) return row.id
-    return this.db.insert('mime_type', { media_type: mimeType })
+    return this.insert_mime_type.run(mimeType).lastInsertRowid as number
   }
 }
 
