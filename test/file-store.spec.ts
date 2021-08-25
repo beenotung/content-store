@@ -12,7 +12,8 @@ describe('file->store test suit', () => {
 
   let content_id: number
 
-  before(() => {
+  before(function () {
+    this.timeout(5000)
     if (existsSync(db_file)) {
       unlinkSync(db_file)
     }
