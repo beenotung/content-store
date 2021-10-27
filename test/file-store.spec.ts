@@ -71,4 +71,22 @@ describe('file->store test suit', () => {
     let id = store.findContentByHash(hash)
     expect(id).to.equals(result)
   })
+
+  it('should compress large textual content', async () => {
+    let file = require.resolve('typescript/lib/tsserver')
+    let raw_data = readFileSync(file)
+    let hash = hashContent(raw_data)
+    let result = await store.storeContent({
+      raw_data,
+      media_type: 'text/typescript',
+    })
+    expect(result).not.undefined
+    let id = store.findContentByHash(hash)
+    expect(id).to.equals(result)
+    let row = store.db
+      .prepare(`select zst_data from content where id = ?`)
+      .get(id)
+    expect(row).not.undefined
+    expect(row.zst_data).to.deep.equals(raw_data)
+  })
 })

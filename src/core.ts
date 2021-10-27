@@ -3,6 +3,7 @@ import { createHash } from 'crypto'
 import { unlinkSync, statSync, readdirSync, readFileSync } from 'fs'
 import { DBInstance } from 'better-sqlite3-schema'
 import { join } from 'path'
+import { compressSync, decompressSync } from 'zstd.ts'
 
 export type StoreResult = number | Promise<number>
 
@@ -68,6 +69,7 @@ limit 1
   private select_content = this.db.prepare(`
 select
   content.raw_data
+, content.zst_data
 , mime_type.media_type
 from content
 inner join mime_type on mime_type.id = content.mime_type_id
@@ -119,9 +121,14 @@ insert or ignore into content_tag (tag_id, content_id)
 values (:tag_id, :content_id)
 `)
 
-  private insert_content = this.db.prepare(`
+  private insert_raw_content = this.db.prepare(`
 insert into content (raw_data, mime_type_id, byte_size)
 values (:raw_data, :mime_type_id, :byte_size)
+`)
+
+  private insert_zst_content = this.db.prepare(`
+insert into content (zst_data, mime_type_id, byte_size)
+values (:zst_data, :mime_type_id, :byte_size)
 `)
 
   private select_by_filename = this.db.prepare(`
@@ -275,6 +282,10 @@ values (?)
     if (!row) {
       throw new Error('content not found')
     }
+    if (row.zst_data) {
+      row.raw_data = decompressSync(row.zst_data)
+      delete row.zst_data
+    }
     return row
   }
 
@@ -347,11 +358,34 @@ values (?)
     if (row) return row.content_id
 
     // store the content
-    const content_id = this.insert_content.run({
-      raw_data: args.inline_raw_data ? args.raw_data : null,
-      mime_type_id: this.getMimeTypeId(args.media_type),
-      byte_size: args.raw_data.byteLength,
-    }).lastInsertRowid as number
+
+    const mime_type_id = this.getMimeTypeId(args.media_type)
+    const byte_size = args.raw_data.byteLength
+
+    let content_id: number
+    if (!args.inline_raw_data) {
+      content_id = this.insert_raw_content.run({
+        raw_data: null,
+        mime_type_id,
+        byte_size,
+      }).lastInsertRowid as number
+    } else {
+      const zst_data = compressSync({ input: args.raw_data })
+      if (zst_data.length < args.raw_data.length) {
+        content_id = this.insert_zst_content.run({
+          zst_data,
+          mime_type_id,
+          byte_size,
+        }).lastInsertRowid as number
+      } else {
+        content_id = this.insert_raw_content.run({
+          raw_data: args.raw_data,
+          mime_type_id,
+          byte_size,
+        }).lastInsertRowid as number
+      }
+    }
+
     this.insert_sha256.run({ hash: args.hash, content_id })
 
     return content_id

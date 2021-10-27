@@ -11,6 +11,7 @@ id int PK
 mime_type_id int FK >- mime_type.id
 byte_size int
 raw_data blob null
+zst_data blob null
 
 
 file
